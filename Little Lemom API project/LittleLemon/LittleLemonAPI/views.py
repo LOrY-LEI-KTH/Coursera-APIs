@@ -11,5 +11,5 @@ from rest_framework.response import Response
 def manager_view(request):
     if request.user.groups.filter(name='Manager').exists():
         return Response({"message":"Only Manager should see this"})
-    else 
+    else:
         return Response({"message":"You are not authorized"},403)
