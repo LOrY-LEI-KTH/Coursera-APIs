@@ -8,11 +8,11 @@ class IsManager(permissions.BasePermission):
         return request.user.is_authenticated and request.user.groups.filter(name="Manager").exists()
 
 
-class IsCustomerOrDelivery(permissions.BasePermission):
-    """Allow customers and delivery crew to read-only access."""
+# class IsCustomerOrDelivery(permissions.BasePermission):
+#     """Allow customers and delivery crew to read-only access."""
 
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and (
-            request.user.groups.filter(name="Customer").exists() or
-            request.user.groups.filter(name="Delivery Crew").exists()
-        )
+#     def has_permission(self, request, view):
+#         return request.user.is_authenticated and (
+#             request.user.groups.filter(name="Customer").exists() or
+#             request.user.groups.filter(name="Delivery Crew").exists()
+#         )

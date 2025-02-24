@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from .models import MenuItem
 from .serializers import MenuItemSerializer
-from .permissions import IsManager, IsCustomerOrDelivery
+from .permissions import IsManager
 
 # Create your views here.
 

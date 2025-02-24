@@ -5,9 +5,9 @@ from . import views
 
 
 router = DefaultRouter()
-router.register(r'menu-items', views.MenuItemViewSet, basename='menu-item')
+router.register(r'menu-items', views.MenuItemViewSet, basename='menu-items')
 
 
 urlpatterns = [
-  path('/', include(router.urls))
+  path('', include(router.urls))
 ]
