@@ -19,4 +19,9 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         """Assign permissions based on user groups."""
         if self.request.method in ['POST', 'PUT', 'PATCH', 'DELETE']:
             return [IsAuthenticated(), IsManager()]  # Only managers can modify
-        return [IsAuthenticated(), IsCustomerOrDelivery()]  # Customers & delivery crew can only view
+
+        # Customers and Delivery Crew can view (GET), Managers can also view (GET) if needed
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]  # All authenticated users can view (GET)
+
+        return []  # Default to no permissions (not really needed)
