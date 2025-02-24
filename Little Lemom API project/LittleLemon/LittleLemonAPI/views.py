@@ -5,8 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import MenuItem
-from .serializers import MenuItemSerializer, UserGroupSerializer
+from .models import MenuItem, Cart
+from .serializers import MenuItemSerializer, UserGroupSerializer,CartSerializer
 from .permissions import IsManager
 
 # Create your views here.
@@ -107,3 +107,36 @@ def delivery_crew_user_delete(request, userId):
         return Response({"message": "User removed from Delivery Crew group"}, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def cart_menu_items(request):
+    user = request.user
+
+    if request.method == 'GET':
+        # Return all cart items for the current user.
+        cart_items = Cart.objects.filter(user=user)
+        serializer = CartSerializer(cart_items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    elif request.method == 'POST':
+        # Add a new menu item to the cart.
+        # Expected JSON payload:
+        # {
+        #    "menuitem": <menuitem_id>,
+        #    "quantity": <quantity>
+        # }
+        data = request.data.copy()
+        serializer = CartSerializer(data=data)
+        if serializer.is_valid():
+            # Save the cart item using the authenticated user.
+            # Optionally, you could calculate unit_price and price based on the menuitem.
+            serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        # Delete all cart items for the current user.
+        Cart.objects.filter(user=user).delete()
+        return Response({"message": "Cart cleared."}, status=status.HTTP_200_OK)

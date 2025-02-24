@@ -4,7 +4,8 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (MenuItemViewSet,
     manager_users, manager_user_delete,
-    delivery_crew_users, delivery_crew_user_delete
+    delivery_crew_users, delivery_crew_user_delete,
+    cart_menu_items
 )
 
 
@@ -23,4 +24,7 @@ urlpatterns = [
     # Delivery Crew group endpoints
     path('groups/delivery-crew/users', delivery_crew_users, name="delivery-crew-users"),
     path('groups/delivery-crew/users/<int:userId>', delivery_crew_user_delete, name="delivery-crew-user-delete"),
+
+    # Cart
+    path('cart/menu-items', cart_menu_items, name="cart-menu-items"),
 ]
