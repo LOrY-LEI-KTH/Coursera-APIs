@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User, Group
+from django.db import IntegrityError
 from rest_framework import viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.decorators import api_view, permission_classes
@@ -122,47 +123,18 @@ def cart_menu_items(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     elif request.method == 'POST':
-        # Add a new menu item to the cart.
-        # Expected JSON payload:
-        # {
-        #    "menuitem": <menuitem_id>,
-        #    "quantity": <quantity>
-        # }
-        
-        # Ensure the required data is in the request
-        menuitem_id = request.data.get("menuitem")
-        quantity = request.data.get("quantity")
-
-        if not menuitem_id or not quantity:
-            return Response({"error": "Both 'menuitem' and 'quantity' are required."},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            # Get the MenuItem object by the provided menuitem_id
-            menuitem = MenuItem.objects.get(id=menuitem_id)
-        except MenuItem.DoesNotExist:
-            return Response({"error": "Menu item not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        # Calculate unit_price and price based on the menuitem
-        unit_price = menuitem.price  # Assuming the `MenuItem` model has a `price` field
-        price = unit_price * quantity
-
-        # Prepare the data to be saved
-        data = {
-            "menuitem": menuitem_id,
-            "quantity": quantity,
-            "unit_price": unit_price,
-            "price": price
-        }
-
-        serializer = CartSerializer(data=data)
-        
+        # Add item to cart (unit_price & price auto-calculated in serializer)
+        serializer = CartSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            # Save the cart item using the authenticated user
-            serializer.save(user=user)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        # Remove all cart items for the current user
+        Cart.objects.filter(user=user).delete()
+        return Response({"message": "Cart cleared."}, status=status.HTTP_200_OK)
+
     
 
 class CategoryListView(ListAPIView):
