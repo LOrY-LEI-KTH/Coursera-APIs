@@ -6,20 +6,17 @@ from rest_framework.response import Response
 
 from .models import MenuItem
 from .serializers import MenuItemSerializer
+from .permissions import IsManager, IsCustomerOrDelivery
 
 # Create your views here.
-
-
-# @api_view()
-# @permission_classes([IsAuthenticated])
-# def manager_view(request):
-#     if request.user.groups.filter(name='Manager').exists():
-#         return Response({"message":"Only Manager should see this"})
-#     else:
-#         return Response({"message":"You are not authorized"},403)
-    
 
 
 class MenuItemViewSet(viewsets.ModelViewSet):
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
+
+    def get_permissions(self):
+        """Assign permissions based on user groups."""
+        if self.request.method in ['POST', 'PUT', 'PATCH', 'DELETE']:
+            return [IsAuthenticated(), IsManager()]  # Only managers can modify
+        return [IsAuthenticated(), IsCustomerOrDelivery()]  # Customers & delivery crew can only view
