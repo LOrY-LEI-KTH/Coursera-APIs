@@ -5,7 +5,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (MenuItemViewSet,
     manager_users, manager_user_delete,
     delivery_crew_users, delivery_crew_user_delete,
-    cart_menu_items
+    cart_menu_items, CategoryListView
 )
 
 
@@ -15,9 +15,13 @@ router.register(r'menu-items', MenuItemViewSet, basename='menu-items')
 
 
 urlpatterns = [
+    # categories
+     path('categories/', CategoryListView.as_view(), name='category-list'),
+
+    # menuitems
     path('', include(router.urls)),
 
- # Manager group endpoints
+    # Manager group endpoints
     path('groups/manager/users', manager_users, name="manager-users"),
     path('groups/manager/users/<int:userId>', manager_user_delete, name="manager-user-delete"),
 

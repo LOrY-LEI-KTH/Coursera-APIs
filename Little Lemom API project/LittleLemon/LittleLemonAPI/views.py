@@ -1,12 +1,13 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import viewsets
+from rest_framework.generics import ListAPIView
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import MenuItem, Cart
-from .serializers import MenuItemSerializer, UserGroupSerializer,CartSerializer
+from .models import MenuItem, Cart, Category
+from .serializers import MenuItemSerializer, UserGroupSerializer,CartSerializer, CategorySerializer
 from .permissions import IsManager
 
 # Create your views here.
@@ -140,3 +141,9 @@ def cart_menu_items(request):
         # Delete all cart items for the current user.
         Cart.objects.filter(user=user).delete()
         return Response({"message": "Cart cleared."}, status=status.HTTP_200_OK)
+    
+
+class CategoryListView(ListAPIView):
+    queryset = Category.objects.all()  # Query all categories
+    serializer_class = CategorySerializer  # Use the CategorySerializer to format the response
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Allows viewing by anyone, but modification is restricted
