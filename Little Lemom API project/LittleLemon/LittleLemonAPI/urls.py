@@ -5,7 +5,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (MenuItemViewSet,
     manager_users, manager_user_delete,
     delivery_crew_users, delivery_crew_user_delete,
-    cart_menu_items, CategoryListView
+    cart_menu_items, CategoryListView,
+    order_detail,orders_list
 )
 
 
@@ -31,4 +32,7 @@ urlpatterns = [
 
     # Cart
     path('cart/menu-items', cart_menu_items, name="cart-menu-items"),
+    # Order
+    path('orders', orders_list, name='orders-list'),
+    path('orders/<int:order_id>', order_detail, name='order-detail'),
 ]

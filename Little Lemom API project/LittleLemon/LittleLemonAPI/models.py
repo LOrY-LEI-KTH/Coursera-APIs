@@ -34,7 +34,7 @@ class Order(models.Model):
     date = models.DateField(db_index=True)
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE,  related_name='order_items')# Allows you to use order.order_items in serializers
     menuitem = models.ForeignKey(MenuItem, on_delete=models.CASCADE)
     quantity = models.SmallIntegerField(default=0)
     unit_price = models.DecimalField(max_digits=6, decimal_places=2)

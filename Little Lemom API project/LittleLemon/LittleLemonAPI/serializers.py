@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import MenuItem, Cart, Category
+from .models import MenuItem, Cart, Category, Order, OrderItem
 
 class MenuItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,3 +41,19 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'title', 'slug']  # Fields you want to expose in the API
+
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'menuitem', 'quantity', 'unit_price', 'price']
+        read_only_fields = ['unit_price', 'price']
+
+class OrderSerializer(serializers.ModelSerializer):
+    order_items = OrderItemSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Order
+        fields = ['id', 'user', 'delivery_crew', 'status', 'total', 'date', 'order_items']
+        read_only_fields = ['user', 'total', 'date']

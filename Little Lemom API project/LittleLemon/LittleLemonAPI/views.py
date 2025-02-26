@@ -1,5 +1,7 @@
+import datetime
 from django.contrib.auth.models import User, Group
-from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
+
 from rest_framework import viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.decorators import api_view, permission_classes
@@ -7,8 +9,8 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import MenuItem, Cart, Category
-from .serializers import MenuItemSerializer, UserGroupSerializer,CartSerializer, CategorySerializer
+from .models import MenuItem, Cart, Category, Order, OrderItem
+from .serializers import MenuItemSerializer, UserGroupSerializer,CartSerializer, CategorySerializer, OrderSerializer
 from .permissions import IsManager
 
 # Create your views here.
@@ -141,3 +143,136 @@ class CategoryListView(ListAPIView):
     queryset = Category.objects.all()  # Query all categories
     serializer_class = CategorySerializer  # Use the CategorySerializer to format the response
     permission_classes = [IsAuthenticatedOrReadOnly]  # Allows viewing by anyone, but modification is restricted
+
+
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def orders_list(request):
+    """
+    GET /api/orders/:
+      - For Managers: return all orders.
+      - For Delivery Crew: return orders where delivery_crew == request.user.
+      - For Customers: return orders where order.user == request.user.
+    
+    POST /api/orders/ (only allowed for Customers):
+      - Creates a new order for the current customer from their cart items.
+    """
+    user = request.user
+    
+    # -----------------------
+    # GET: List orders based on role
+    # -----------------------
+    if request.method == 'GET':
+        if user.groups.filter(name="Manager").exists():
+            orders = Order.objects.all()
+        elif user.groups.filter(name="Delivery crew").exists():
+            orders = Order.objects.filter(delivery_crew=user)
+        else:
+            orders = Order.objects.filter(user=user)
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    # -----------------------
+    # POST: Create a new order (for Customers only)
+    # -----------------------
+    elif request.method == 'POST':
+        # Only customers can create orders
+        if user.groups.filter(name="Manager").exists() or user.groups.filter(name="Delivery crew").exists():
+            return Response({"error": "Only customers can create orders."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Create order from current cart items.
+        cart_items = Cart.objects.filter(user=user)
+        if not cart_items.exists():
+            return Response({"error": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create a new order for the customer; set date to today and total initially 0.
+        order = Order.objects.create(
+            user=user,
+            total=0,
+            date=datetime.date.today()
+        )
+        total = 0
+        for item in cart_items:
+            # Create an OrderItem for each cart item
+            OrderItem.objects.create(
+                order=order,
+                menuitem=item.menuitem,
+                quantity=item.quantity,
+                unit_price=item.unit_price,
+                price=item.price
+            )
+            total += item.price
+        order.total = total
+        order.save()
+        # Clear the cart
+        cart_items.delete()
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def order_detail(request, order_id):
+    """
+    /api/orders/{order_id}/ endpoint:
+    
+    GET:
+      - For Customers: allowed only if order.user == request.user.
+      - For Managers and Delivery Crew: allowed for any order.
+      
+    PUT/PATCH:
+      - For Managers: update any order fields (e.g., assign delivery crew, update status).
+      - For Delivery Crew: allowed only to update the 'status' field.
+      - Customers: not allowed to update orders.
+      
+    DELETE:
+      - Only Managers can delete orders.
+    """
+    order = get_object_or_404(Order, id=order_id)
+    user = request.user
+
+    # -----------------------
+    # GET: Retrieve order details.
+    # -----------------------
+    if request.method == 'GET':
+        # Customers can only view their own orders.
+        if not (user.groups.filter(name="Manager").exists() or user.groups.filter(name="Delivery crew").exists()):
+            if order.user != user:
+                return Response({"error": "Not authorized to view this order."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    # -----------------------
+    # PUT/PATCH: Update an order.
+    # -----------------------
+    elif request.method in ['PUT', 'PATCH']:
+        # Manager: can update any field.
+        if user.groups.filter(name="Manager").exists():
+            serializer = OrderSerializer(order, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Delivery Crew: can only update the 'status' field.
+        elif user.groups.filter(name="Delivery crew").exists():
+            if set(request.data.keys()) != {'status'}:
+                return Response({"error": "Delivery crew can only update the 'status' field."}, status=status.HTTP_400_BAD_REQUEST)
+            serializer = OrderSerializer(order, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"error": "Not authorized to update this order."}, status=status.HTTP_403_FORBIDDEN)
+    
+    # -----------------------
+    # DELETE: Delete an order.
+    # -----------------------
+    elif request.method == 'DELETE':
+        if user.groups.filter(name="Manager").exists():
+            order.delete()
+            return Response({"message": "Order deleted."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Not authorized to delete this order."}, status=status.HTTP_403_FORBIDDEN)
