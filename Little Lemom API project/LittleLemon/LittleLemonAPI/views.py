@@ -6,8 +6,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import viewsets
 from rest_framework.generics import ListAPIView
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -21,6 +22,7 @@ from .permissions import IsManager
 
 
 class MenuItemViewSet(viewsets.ModelViewSet):
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
     pagination_class = PageNumberPagination  # Using the default PageNumberPagination
@@ -48,6 +50,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsManager])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 def manager_users(request):
     """
     GET: Returns all users in the Manager group.
@@ -71,6 +74,7 @@ def manager_users(request):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, IsManager])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 def manager_user_delete(request, userId):
     """
     DELETE: Removes the user with the provided userId from the Manager group.
@@ -81,13 +85,14 @@ def manager_user_delete(request, userId):
         user.groups.remove(manager_group)
         return Response({"message": "User removed from Manager group"}, status=status.HTTP_200_OK)
     except User.DoesNotExist:
-        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND) 
 
 
 # ----- Delivery Crew Group Endpoints ----- #
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsManager])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 def delivery_crew_users(request):
     """
     GET: Returns all users in the Delivery Crew group.
@@ -111,6 +116,7 @@ def delivery_crew_users(request):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, IsManager])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 def delivery_crew_user_delete(request, userId):
     """
     DELETE: Removes the user with the provided userId from the Delivery Crew group.
@@ -126,6 +132,7 @@ def delivery_crew_user_delete(request, userId):
 
 @api_view(['GET', 'POST', 'DELETE'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 def cart_menu_items(request):
     user = request.user
 
@@ -151,6 +158,7 @@ def cart_menu_items(request):
     
 
 class CategoryListView(ListAPIView):
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     queryset = Category.objects.all()  # Query all categories
     serializer_class = CategorySerializer  # Use the CategorySerializer to format the response
     permission_classes = [IsAuthenticatedOrReadOnly]  # Allows viewing by anyone, but modification is restricted
@@ -160,6 +168,7 @@ class CategoryListView(ListAPIView):
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 def orders_list(request):
     """
     GET /api/orders/:
@@ -262,6 +271,7 @@ def orders_list(request):
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
 def order_detail(request, order_id):
     """
     /api/orders/{order_id}/ endpoint:
