@@ -55,7 +55,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'Littlelemon.urls'
+ROOT_URLCONF = 'LittleLemon.urls'
 
 TEMPLATES = [
     {
@@ -73,7 +73,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'Littlelemon.wsgi.application'
+WSGI_APPLICATION = 'LittleLemon.wsgi.application'
 
 
 # Database
