@@ -54,7 +54,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
 def manager_users(request):
     """
     GET: Returns all users in the Manager group.
-    POST: Assigns the user (provided via 'user_id' in payload) to the Manager group.
+    POST: Assigns the user (provided via 'username' in payload) to the Manager group.
     """
     manager_group = Group.objects.get(name="Manager")
     
@@ -64,9 +64,9 @@ def manager_users(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     elif request.method == 'POST':
-        user_id = request.data.get("user_id")
+        username = request.data.get("username")
         try:
-            user = User.objects.get(id=user_id)
+            user = User.objects.get(username=username)
             user.groups.add(manager_group)
             return Response({"message": "User added to Manager group"}, status=status.HTTP_201_CREATED)
         except User.DoesNotExist:
