@@ -1,11 +1,15 @@
 import datetime
+from django.core.paginator import Paginator, EmptyPage
 from django.contrib.auth.models import User, Group
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -19,6 +23,13 @@ from .permissions import IsManager
 class MenuItemViewSet(viewsets.ModelViewSet):
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
+    pagination_class = PageNumberPagination  # Using the default PageNumberPagination
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_fields = ['featured', 'category']
+    ordering_fields = ['price', 'title']
+    ordering = ['title']  # default ordering
+    search_fields = ['title']  # allow searching by title
+
 
     def get_permissions(self):
         """Assign permissions based on user groups."""
@@ -171,8 +182,46 @@ def orders_list(request):
             orders = Order.objects.filter(delivery_crew=user)
         else:
             orders = Order.objects.filter(user=user)
-        serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+        # ----- Filtering ----- 
+        # Optionally filter by 'status' if provided (e.g., ?status=true or ?status=false)
+        status_filter = request.query_params.get('status')
+        if status_filter is not None:
+            # Interpret common true/false values
+            if status_filter.lower() in ['true', '1']:
+                orders = orders.filter(status=True)
+            else:
+                orders = orders.filter(status=False)
+        
+        # ----- Sorting (Ordering) -----
+        # Use the 'ordering' query parameter (e.g., ?ordering=total or ?ordering=-date)
+        ordering_param = request.query_params.get('ordering')
+        if ordering_param:
+            orders = orders.order_by(ordering_param)
+        else:
+            orders = orders.order_by('-date')  # default ordering
+        
+        # ----- Pagination -----
+           # Manual pagination using Django's Paginator
+        page = request.query_params.get('page', 1)
+        perpage = request.query_params.get('perpage', 10)
+        try:
+            perpage = int(perpage)
+            page = int(page)
+        except ValueError:
+            return Response({"error": "Invalid page or perpage parameter."}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = Paginator(orders, per_page=perpage)
+        try:
+            orders = paginator.page(number=page)
+        except EmptyPage:
+            orders = []
+        
+        serializer_orders = OrderSerializer(orders, many=True)
+
+        return Response(serializer_orders.data, status=status.HTTP_200_OK)
+ 
     
     # -----------------------
     # POST: Create a new order (for Customers only)
