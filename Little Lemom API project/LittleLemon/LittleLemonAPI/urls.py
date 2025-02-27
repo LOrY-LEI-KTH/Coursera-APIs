@@ -12,12 +12,12 @@ from .views import (MenuItemViewSet,
 
 
 router = DefaultRouter(trailing_slash=False)
-router.register(r'menu-items', MenuItemViewSet, basename='menu-items')
+router.register('menu-items', MenuItemViewSet, basename='menu-items')
 
 
 urlpatterns = [
     # categories
-     path('categories/', CategoryListView.as_view(), name='category-list'),
+    path('categories/', CategoryListView.as_view(), name='category-list'),
 
     # menuitems
     path('', include(router.urls)),
