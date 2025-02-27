@@ -1,0 +1,29 @@
+superuser’s username and password
+
+username: superuser
+password: littlelemon123456
+
+
+Other user's' username and password
+
+
+username: customer1
+password: littlelemon123456
+
+username: customer2
+password: littlelemon123456
+
+username: delivery1
+password: littlelemon123456
+
+username: delivery2
+password: littlelemon123456
+
+username: manager1
+password: littlelemon123456
+
+username: manager2
+password: littlelemon123456
+
+username: manager3
+password: littlelemon123456
