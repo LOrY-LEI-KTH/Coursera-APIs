@@ -11,7 +11,7 @@ from .views import (MenuItemViewSet,
 
 
 
-router = DefaultRouter()
+router = DefaultRouter(trailing_slash=False)
 router.register(r'menu-items', MenuItemViewSet, basename='menu-items')
 
 
